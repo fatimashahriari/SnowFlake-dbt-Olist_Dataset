@@ -1,0 +1,87 @@
+version: 2
+
+models:
+
+  - name: dim_customers
+    description: >
+      One row per unique Olist customer.
+
+    columns:
+
+      - name: customer_unique_id
+        description: "Unique customer identifier."
+        tests:
+          - unique
+          - not_null
+
+      - name: customer_city
+        description: "Customer city."
+
+      - name: customer_state
+        description: "Customer state."
+
+      - name: total_orders
+        description: "Number of orders placed by the customer."
+
+      - name: total_spend
+        description: "Total value spent by the customer."
+
+
+  - name: dim_products
+    description: >
+      One row per product.
+
+    columns:
+
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+
+      - name: product_category_name
+        description: "Product category."
+
+      - name: product_volume_cm3
+        description: "Calculated product volume in cubic centimeters."
+
+
+  - name: fct_orders
+    description: >
+      Order-level fact table containing order,
+      customer, payment, delivery and review metrics.
+
+    columns:
+
+      - name: order_id
+        description: "Unique order identifier."
+        tests:
+          - unique
+          - not_null
+
+      - name: customer_unique_id
+        tests:
+          - not_null
+
+      - name: gross_order_value
+        description: "Product value plus freight."
+
+      - name: delivery_days
+        description: "Days between purchase and delivery."
+
+      - name: delivered_on_time
+        description: "Whether the order arrived by the estimated date."
+
+      - name: order_status
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - delivered
+                  - shipped
+                  - canceled
+                  - unavailable
+                  - invoiced
+                  - processing
+                  - created
+                  - approved

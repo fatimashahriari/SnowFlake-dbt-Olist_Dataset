@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: raw
+    database: DBT_PROJECT
+    schema: RAW
+
+    tables:
+      - name: customers
+      - name: orders
+      - name: order_items
+      - name: products_category_name
+      - name: sellers
+      - name: order_payments
+      - name: order_reviews
+      - name: geolocation
+      - name: products

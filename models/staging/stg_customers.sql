@@ -1,0 +1,14 @@
+WITH source_ AS (
+    SELECT *
+    FROM {{source('raw','customers')}}
+),
+cleaned AS (
+    SELECT TRIM(CUSTOMER_ID) AS CUSTOMER_ID,
+        TRIM(CUSTOMER_UNIQUE_ID) AS CUSTOMER_UNIQUE_ID,
+        CUSTOMER_ZIP_CODE_PREFIX,
+        LOWER(TRIM(CUSTOMER_CITY)) AS CUSTOMER_CITY,
+        UPPER(TRIM(CUSTOMER_STATE)) AS CUSTOMER_STATE
+    FROM source_
+)
+SELECT *
+FROM cleaned

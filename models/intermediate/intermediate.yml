@@ -1,0 +1,43 @@
+version: 2
+
+models:
+
+  - name: int_order_items_aggregated
+    description: >
+      Aggregates order item data to one row per order.
+
+    columns:
+
+      - name: order_id
+        tests:
+          - not_null
+
+      - name: item_count
+        description: "Number of items in the order."
+
+      - name: product_value
+        description: "Total product price before freight."
+
+      - name: freight_value
+        description: "Total freight value for the order."
+
+  - name: int_order_payments_aggregated
+    description: >
+      Aggregates payment records to one row per order.
+
+    columns:
+
+      - name: order_id
+        tests:
+          - not_null
+
+      - name: total_payment_value
+        description: "Total amount paid for the order."
+
+  - name: int_reviews_aggregated
+
+    columns:
+      
+      - name: order_id
+        tests:
+          - not_null
