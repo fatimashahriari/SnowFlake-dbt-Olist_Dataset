@@ -1,1 +1,1 @@
-# snowflake-dbt-sales-analytics
+# snowflake-dbt-Olist_Dataset
