@@ -34,11 +34,17 @@ dbt init olist_dbt_snowflake
 dbt will create something like:
 olist_dbt/
 │
+
 ├── dbt_project.yml
+
 ├── models/
+
 ├── macros/
+
 ├── seeds/
+
 ├── snapshots/
+
 └── tests/
 
 ### in PowerShell:
