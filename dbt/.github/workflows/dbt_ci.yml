@@ -1,0 +1,59 @@
+name: dbt CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  dbt-ci:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Get your repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Install dbt Snowflake
+      - name: Install dbt
+        run: |
+          pip install dbt-snowflake
+
+      # Install dbt packages if packages.yml exists
+      - name: Install dbt dependencies
+        run: dbt deps
+
+      # Check connection to Snowflake
+      - name: Test Snowflake connection
+        run: dbt debug --target ci --profiles-dir .
+        env:
+          DBT_ACCOUNT: ${{ secrets.DBT_ACCOUNT }}       #These environment variables are used in profiles.yml file.
+          DBT_USER: ${{ secrets.DBT_USER }}
+          DBT_PASSWORD: ${{ secrets.DBT_PASSWORD }}
+          DBT_ROLE: ${{ secrets.DBT_ROLE }}
+
+      # Compile dbt project
+      - name: Compile dbt project
+        run: dbt compile --target ci --profiles-dir .
+        env:
+          DBT_ACCOUNT: ${{ secrets.DBT_ACCOUNT }}
+          DBT_USER: ${{ secrets.DBT_USER }}
+          DBT_PASSWORD: ${{ secrets.DBT_PASSWORD }}
+          DBT_ROLE: ${{ secrets.DBT_ROLE }}
+
+      # Build models and execute tests
+      - name: Build and test dbt project
+        run: dbt build --target ci --profiles-dir .    #This uses ci target connection in profiles.yml
+        env:
+          DBT_ACCOUNT: ${{ secrets.DBT_ACCOUNT }}
+          DBT_USER: ${{ secrets.DBT_USER }}
+          DBT_PASSWORD: ${{ secrets.DBT_PASSWORD }}
+          DBT_ROLE: ${{ secrets.DBT_ROLE }}

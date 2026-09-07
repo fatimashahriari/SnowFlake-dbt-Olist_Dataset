@@ -63,3 +63,5 @@ dbt debug
 OR if the directory of the profile.yml is not C:\Users\<your-user>\.dbt\ :
 dbt debug --profiles-dir "NEW DIRECTORY"
 
+
+

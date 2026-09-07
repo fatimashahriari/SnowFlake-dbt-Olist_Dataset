@@ -1,0 +1,50 @@
+name: dbt CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  dbt-deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Get repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Install dbt
+      - name: Install dbt
+        run: |
+          pip install dbt-snowflake
+
+      # Install dbt dependencies
+      - name: Install dbt dependencies
+        run: dbt deps
+
+      # Check Snowflake connection
+      - name: Test Snowflake connection
+        run: dbt debug
+        env:
+          DBT_ACCOUNT: ${{ secrets.DBT_ACCOUNT }}
+          DBT_USER: ${{ secrets.DBT_USER }}
+          DBT_PASSWORD: ${{ secrets.DBT_PASSWORD }}
+          DBT_ROLE: ${{ secrets.DBT_ROLE }}
+
+      # Deploy models and execute tests
+      - name: Deploy dbt project
+        run: dbt build --target prod
+        env:
+          DBT_ACCOUNT: ${{ secrets.DBT_ACCOUNT }}
+          DBT_USER: ${{ secrets.DBT_USER }}
+          DBT_PASSWORD: ${{ secrets.DBT_PASSWORD }}
+          DBT_ROLE: ${{ secrets.DBT_ROLE }}

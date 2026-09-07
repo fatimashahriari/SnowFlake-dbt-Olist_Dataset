@@ -1,4 +1,4 @@
-# Olist Snowflake + dbt Data Engineering Project
+# Olist Snowflake + dbt Data Engineering Project + CI/CD Workflow Actions
 
 This repository demonstrates a simple end-to-end data engineering workflow using the **Brazilian Olist E-commerce Dataset**, **Python**, **Snowflake**, and **dbt**.
 
@@ -33,6 +33,7 @@ project-root/
 │   └── product_category_name_translation.csv
 │
 └── olist_dbt_snowflake/
+    ├── .github
     ├── dbt_project.yml
     ├── README.md
     ├── models/
@@ -824,3 +825,376 @@ Analytics-Ready Fact & Dimension Tables
 ```
 
 For additional details about individual dbt models, tests, sources, and project configuration, refer to the `README.md` inside the dbt project folder.
+
+## CI/CD with dbt and GitHub Actions
+
+This project uses **GitHub Actions** to implement CI/CD for the dbt pipeline.
+
+The purpose of the pipeline is to separate development, automated testing, and production deployment:
+
+```text
+Development
+    ↓
+Feature Branch
+    ↓
+Pull Request
+    ↓
+CI
+    ↓
+Merge to main
+    ↓
+CD
+    ↓
+Production
+```
+
+### Project Structure
+
+The relevant files are organized as follows:
+
+```text
+olist_dbt_snowflake/
+│
+├── .github/
+│   └── workflows/
+│       ├── dbt_ci.yml
+│       └── dbt_cd.yml
+│
+├── models/
+│   ├── staging/
+│   ├── intermediate/
+│   └── marts/
+│
+├── macros/
+├── seeds/
+├── snapshots/
+├── tests/
+│
+├── dbt_project.yml
+├── profiles.yml
+├── packages.yml
+└── README.md
+```
+
+GitHub automatically detects `.yml` and `.yaml` workflow files stored inside:
+
+```text
+.github/workflows/
+```
+
+The workflow filename itself does not determine when the workflow runs. The `on:` configuration inside each workflow defines its trigger.
+
+---
+
+## dbt Environments
+
+The project uses three dbt targets:
+
+```text
+dev   → local development
+ci    → automated CI validation
+prod  → production deployment
+```
+
+They are defined under `outputs` in `profiles.yml`.
+
+
+`target: dev` defines the default target. Therefore:
+
+```bash
+dbt run
+```
+
+uses `dev` unless another target is explicitly specified.
+
+For example:
+
+```bash
+dbt build --target ci
+dbt build --target prod
+```
+
+The `--target` argument selects the corresponding output from `profiles.yml`.
+
+---
+
+## Snowflake Credentials
+
+Snowflake credentials must not be stored directly in the repository.
+
+The following values are configured as **GitHub Repository Secrets**:
+
+```text
+DBT_ACCOUNT
+DBT_USER
+DBT_PASSWORD
+DBT_ROLE
+```
+
+They can be configured under:
+
+```text
+Repository
+→ Settings
+→ Secrets and variables
+→ Actions
+→ Repository secrets
+```
+
+The connection flow is therefore:
+
+```text
+GitHub Repository Secrets
+        ↓
+GitHub Actions workflow
+        ↓
+Environment Variables
+        ↓
+profiles.yml
+        ↓
+dbt
+        ↓
+Snowflake
+```
+
+The committed `profiles.yml` contains only references to environment variables and does not contain the actual credentials.
+
+---
+
+## Providing `profiles.yml` to GitHub Actions
+
+When GitHub Actions starts a workflow, it creates a temporary runner.
+
+The runner does not have access to the local dbt configuration stored on a developer's computer under:
+
+```text
+~/.dbt/profiles.yml
+```
+
+In this project, `profiles.yml` is stored in the repository root.
+
+Therefore, GitHub Actions explicitly tells dbt where to find it:
+
+```bash
+dbt build --target ci --profiles-dir .
+```
+
+The `.` means:
+
+```text
+Use the current project directory to find profiles.yml.
+```
+---
+
+## Continuous Integration (CI)
+
+CI validates changes before they are merged into the `main` branch.
+
+The CI workflow is stored at:
+
+```text
+.github/workflows/dbt_ci.yml
+```
+
+It is triggered by Pull Requests targeting `main`:
+
+```yaml
+on:
+  pull_request:
+    branches:
+      - main
+```
+
+A typical CI workflow performs the following operations:
+
+```text
+Pull Request
+    ↓
+Checkout repository
+    ↓
+Install Python
+    ↓
+Install dbt-snowflake
+    ↓
+Install dbt dependencies
+    ↓
+dbt debug
+    ↓
+dbt compile
+    ↓
+dbt build --target ci
+    ↓
+PASS / FAIL
+```
+
+`dbt build` is used because it builds the selected dbt resources and executes the associated tests according to the dbt DAG.
+
+Conceptually:
+
+```text
+dbt build
+≈
+dbt run
++
+dbt test
+```
+
+It can also process other selected dbt resources such as seeds and snapshots.
+
+The CI commands use the CI target:
+
+```bash
+dbt debug --target ci --profiles-dir .
+dbt compile --target ci --profiles-dir .
+dbt build --target ci --profiles-dir .
+```
+
+If models cannot compile, Snowflake cannot be reached, or dbt tests fail, the CI workflow fails and the problem can be corrected before merging the code into `main`.
+
+---
+
+## Continuous Deployment (CD)
+
+CD deploys approved code after it reaches the `main` branch.
+
+The CD workflow is stored at:
+
+```text
+.github/workflows/dbt_cd.yml
+```
+
+It is triggered when changes are pushed to `main`:
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+```
+
+A Pull Request merge updates the `main` branch and generates a GitHub `push` event. This causes the CD workflow to start automatically.
+
+The production deployment uses:
+
+```bash
+dbt build --target prod --profiles-dir .
+```
+
+The deployment flow is:
+
+```text
+CI passes
+    ↓
+Pull Request is merged
+    ↓
+main is updated
+    ↓
+GitHub push event
+    ↓
+CD starts
+    ↓
+dbt build --target prod
+    ↓
+Snowflake production environment
+```
+
+---
+
+## Git Branch Strategy
+
+Development is performed on feature or fix branches rather than directly on `main`.
+
+Example:
+
+```text
+main
+│
+├── feature/add-sales-model
+├── feature/customer-dimension
+└── fix/order-tests
+```
+
+`main` contains the approved and stable version of the dbt project.
+
+A new feature branch can be created from the latest `main`:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/add-sales-model
+```
+
+After making changes:
+
+```bash
+git add .
+git commit -m "Add sales fact model"
+git push -u origin feature/add-sales-model
+```
+
+A Pull Request is then created:
+
+```text
+feature/add-sales-model
+        ↓
+       main
+```
+
+Creating or updating this Pull Request triggers the CI workflow.
+
+If CI passes, the Pull Request can be merged into `main`.
+
+The merge updates `main`, which triggers the CD workflow.
+
+---
+
+## Complete CI/CD Lifecycle
+
+```text
+Developer
+    ↓
+git checkout main
+    ↓
+git pull origin main
+    ↓
+Create feature branch
+    ↓
+Develop and test locally
+    ↓
+dbt run / dbt build
+    ↓
+Commit changes
+    ↓
+Push feature branch
+    ↓
+Create Pull Request → main
+    ↓
+────────────────────────
+       CI PIPELINE
+────────────────────────
+    ↓
+dbt debug --target ci
+    ↓
+dbt compile --target ci
+    ↓
+dbt build --target ci
+    ↓
+Tests pass
+    ↓
+Pull Request approved
+    ↓
+Merge into main
+    ↓
+GitHub push event on main
+    ↓
+────────────────────────
+       CD PIPELINE
+────────────────────────
+    ↓
+dbt build --target prod
+    ↓
+Snowflake Production
+```
+
+This workflow ensures that new dbt changes are developed independently, automatically validated before merging, and deployed to production only after successful CI validation.
+
