@@ -826,7 +826,7 @@ Analytics-Ready Fact & Dimension Tables
 
 For additional details about individual dbt models, tests, sources, and project configuration, refer to the `README.md` inside the dbt project folder.
 
-## CI/CD with dbt and GitHub Actions
+## 18. CI/CD with dbt and GitHub Actions
 
 This project uses **GitHub Actions** to implement CI/CD for the dbt pipeline.
 
