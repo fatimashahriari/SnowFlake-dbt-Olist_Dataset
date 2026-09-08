@@ -8,11 +8,7 @@ on:
 jobs:
   dbt-ci:
 
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./dbt
+    runs-on: ubuntu-lates
 
     steps:
 
@@ -38,7 +34,6 @@ jobs:
 
       # Check Snowflake connection
       - name: Test Snowflake connection
-        working-directory: ./dbt
         run: dbt debug --target prod --profiles-dir .
         env:
           DBT_ACCOUNT: ${{ secrets.DBT_ACCOUNT }}
@@ -47,7 +42,6 @@ jobs:
           DBT_ROLE: ${{ secrets.DBT_ROLE }}
           
       - name: Compile dbt project
-        working-directory: ./dbt
         run: dbt compile --target prod --profiles-dir .
         env:
           DBT_ACCOUNT: ${{ secrets.DBT_ACCOUNT }}
@@ -57,7 +51,6 @@ jobs:
 
       # Deploy models and execute tests
       - name: Deploy dbt project
-        working-directory: ./dbt
         run: dbt build --target prod --profiles-dir .
         env:
           DBT_ACCOUNT: ${{ secrets.DBT_ACCOUNT }}
