@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  dbt-deploy:
+  dbt-ci:
 
     runs-on: ubuntu-latest
 
