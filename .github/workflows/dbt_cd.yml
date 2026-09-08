@@ -8,7 +8,7 @@ on:
 jobs:
   dbt-ci:
 
-    runs-on: ubuntu-lates
+    runs-on: ubuntu-latest
 
     steps:
 
